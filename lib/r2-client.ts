@@ -36,4 +36,23 @@ export async function generatePresignedUpload(
     publicUrl: `${baseUrl}/${key}`,
   };
 }
+
+export async function getFromR2(key: string) {
+  const response = await r2Client.send(
+    new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+    })
+  );
+
+  if (!response.Body) {
+    throw new Error('Image not found');
+  }
+
+  const buffer = Buffer.from(await response.Body.transformToByteArray());
+  const contentType = response.ContentType || 'image/jpeg';
+
+  return { buffer, contentType };
+}
+
 export default r2Client;
