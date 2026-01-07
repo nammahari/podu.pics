@@ -35,21 +35,32 @@ export default function Home() {
     setUploadedUrl(null);
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await fetch('/api/upload', {
+      const metadataResponse = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contentType: file.type,
+          size: file.size,
+        }),
       });
 
-      const data = await response.json();
+      const metadata = await metadataResponse.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed');
+      if (!metadataResponse.ok) {
+        throw new Error(metadata.error || 'Failed to get upload URL');
       }
 
-      setUploadedUrl(data.url);
+      const uploadResponse = await fetch(metadata.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      setUploadedUrl(metadata.url);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed. Please try again.');
     } finally {
